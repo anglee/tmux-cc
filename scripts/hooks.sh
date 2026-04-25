@@ -47,6 +47,13 @@ INNER_PID=$(get_ppid "$PPID")
 OUTER_PID=$(get_ppid "$INNER_PID")
 TMUX_PANE_ID="${TMUX_PANE:-}"
 
+# Skip subagent processes (reparented to init after parent exits).
+# Empty OUTER_PID means ps couldn't find the ancestor (already gone), which
+# is the same signal — and `[[ "" -le 1 ]]` would abort under set -e.
+if [[ -z "$OUTER_PID" || "$OUTER_PID" -le 1 ]]; then
+  exit 0
+fi
+
 if [[ "$SOURCE" != "startup" ]] && get_cmdline "$OUTER_PID" | grep -q -- '--fork-session'; then
   exit 0
 fi
