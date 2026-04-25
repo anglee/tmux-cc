@@ -54,8 +54,17 @@ if [[ -z "$OUTER_PID" || "$OUTER_PID" -le 1 ]]; then
   exit 0
 fi
 
-if [[ "$SOURCE" != "startup" ]] && get_cmdline "$OUTER_PID" | grep -q -- '--fork-session'; then
-  exit 0
+# Skip --fork-session SessionStart events: CC fires SessionStart for the
+# fork using the *parent's* session_id, which would clobber the parent's
+# registry file. The hook is spawned directly by claude here, so the flag
+# lives in $PPID's argv; walk the near chain to also handle a shell-wrapper
+# variant.
+if [[ "$SOURCE" != "startup" ]]; then
+  for p in "$PPID" "$INNER_PID" "$OUTER_PID"; do
+    if [[ -n "$p" ]] && get_cmdline "$p" | grep -q -- '--fork-session'; then
+      exit 0
+    fi
+  done
 fi
 
 TMP_FILE="$ACTIVE_DIR/.${SESSION_ID}.tmp"
@@ -104,10 +113,44 @@ INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id')
 HOOK_EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // empty')
 TARGET_FILE="$ACTIVE_DIR/${SESSION_ID}.json"
-
-[ ! -f "$TARGET_FILE" ] && exit 0
-
 NOW=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+
+# Fallback registration for forked sessions. CC's fork SessionStart fires
+# with the parent's session_id (skipped in session-start.sh to avoid
+# clobbering the parent), so the fork never gets its own registry file.
+# UserPromptSubmit is the first event to carry the fork's real session_id
+# — register on first sight here so the fork shows up in the switcher.
+if [[ ! -f "$TARGET_FILE" ]]; then
+  if [[ "$HOOK_EVENT" != "UserPromptSubmit" ]]; then
+    exit 0
+  fi
+  CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+  get_ppid() { ps -o ppid= -p "$1" 2>/dev/null | tr -d ' '; }
+  INNER_PID=$(get_ppid "$PPID")
+  OUTER_PID=$(get_ppid "$INNER_PID")
+  TMUX_PANE_ID="${TMUX_PANE:-}"
+  # Same subagent guard as session-start.sh
+  if [[ -z "$OUTER_PID" || "$OUTER_PID" -le 1 ]]; then
+    exit 0
+  fi
+  TMP_FILE="$ACTIVE_DIR/.${SESSION_ID}.tmp"
+  cat > "$TMP_FILE" <<ENTRY
+{
+  "pid": $INNER_PID,
+  "innerPid": $INNER_PID,
+  "outerPid": $OUTER_PID,
+  "cwd": "$(echo "$CWD" | sed 's/"/\\"/g')",
+  "model": null,
+  "source": "fork",
+  "tmuxPane": $([ -n "$TMUX_PANE_ID" ] && echo "\"$TMUX_PANE_ID\"" || echo "null"),
+  "startedAt": "$NOW",
+  "status": "idle",
+  "statusDetail": null,
+  "statusUpdatedAt": "$NOW"
+}
+ENTRY
+  mv "$TMP_FILE" "$TARGET_FILE"
+fi
 
 case "$HOOK_EVENT" in
   Stop)
