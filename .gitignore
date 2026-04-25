@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# Editor / IDE
+.idea/
+
+# Claude Code project-local state
+.claude/
