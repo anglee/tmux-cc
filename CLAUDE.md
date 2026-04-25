@@ -9,7 +9,11 @@ tmux-cc.tmux          # Plugin entry point. Sourced by tmux on load. Binds prefi
 scripts/
   hooks.sh            # CLI tool (install|uninstall|status) that manages Claude Code lifecycle hooks.
   switcher.sh         # The fzf-based session switcher UI. Also serves fzf callbacks (--render, --cycle, etc).
+  save-sessions.sh    # Snapshots active CC sessions to ~/.tmux-cc/saved-sessions.json keyed by tmux positional address. Companion to tmux-resurrect.
+  restore-sessions.sh # Reads ~/.tmux-cc/saved-sessions.json and replays `claude --resume <sessionId>` into each matching tmux pane (--dry-run to preview). Companion to save-sessions.sh.
 ```
+
+See README "Save/Restore Sessions Across Reboots" for the full flow.
 
 ## Runtime data (not in repo)
 
@@ -22,6 +26,7 @@ scripts/
   active/
     {session-id}.json # One file per active session, written/updated by hooks
   tmux-cc.conf        # Display preferences (id/directory/tmux/preview/sort modes)
+  saved-sessions.json # Snapshot of active CC sessions keyed by tmux session:window.pane address, written by save-sessions.sh
 ```
 
 The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh install` (written via heredocs in `write_hook_scripts()`). They are not checked into the repo. If you change the hook logic, edit the heredocs in `hooks.sh` and re-run `install`.
@@ -53,6 +58,10 @@ The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh instal
    - Renders everything into fzf with live pane preview
 
 6. **switcher.sh** also handles fzf callbacks. fzf's `--bind` options invoke the same script with flags like `--cycle id`, `--cycle sort`, `--resort <tmpfile>`, `--render <tmpfile>`, `--render-header`, and `--toggle-preview`. This lets the user change display settings and sort order without leaving fzf.
+
+7. **save-sessions.sh** is orthogonal to the switcher flow. It snapshots `~/.tmux-cc/active/*.json` to `~/.tmux-cc/saved-sessions.json`, keyed by tmux positional address (`session_name:window_index.pane_index`) resolved via `tmux list-panes -aF`. Filters dead sessions with the same `kill -0` test the switcher uses. Positional addresses survive `tmux-resurrect` restore (ephemeral `%pane_id`s do not), so the restore step can match each saved CC session to its restored pane.
+
+8. **restore-sessions.sh** is the inverse: reads `~/.tmux-cc/saved-sessions.json`, looks up each saved address against the current `tmux list-panes`, and runs `claude --resume <sessionId>` in the matching pane via `tmux send-keys` (preceded by `C-u` to clear any partial prompt input). Skips entries whose pane no longer exists. Supports `--dry-run` to preview without sending keystrokes. Both scripts are still manually invoked; auto-wiring into resurrect's pre-save / post-restore hooks is tracked in #7.
 
 ## Key design decisions
 

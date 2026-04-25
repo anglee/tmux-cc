@@ -100,6 +100,26 @@ run '~/.tmux/plugins/tmux-cc/tmux-cc.tmux'
 
 Column visibility preferences are persisted in `~/.tmux-cc/tmux-cc.conf` and can be changed live using the keyboard shortcuts listed above.
 
+## Save/Restore Sessions Across Reboots
+
+[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) saves and restores tmux sessions/windows/panes across reboots. It doesn't know about Claude Code, so tmux-cc ships companion scripts that pair with it.
+
+**Before reboot:**
+
+1. `prefix + Ctrl-s` — tmux-resurrect saves the tmux layout.
+2. `~/.tmux/plugins/tmux-cc/scripts/save-sessions.sh` — snapshots active CC sessions.
+
+**After reboot:**
+
+1. `prefix + Ctrl-r` — tmux-resurrect restores the tmux layout.
+2. `~/.tmux/plugins/tmux-cc/scripts/restore-sessions.sh` — replays `claude --resume <sessionId>` into each matching pane.
+
+`save-sessions.sh` writes `~/.tmux-cc/saved-sessions.json` mapping each live CC session to its tmux pane coordinates (`session:window.pane`) — coordinates that are stable across restore even though pane ids change. `restore-sessions.sh` reads the file back and runs `claude --resume <sessionId>` in the pane at each saved address.
+
+Use `restore-sessions.sh --dry-run` to preview what would be restored without sending any keystrokes.
+
+> Auto-wiring these scripts into resurrect's pre-save and post-restore hooks (so you don't have to remember the second step in each list) is tracked in [#7](https://github.com/anglee/tmux-cc/issues/7).
+
 ## How it works
 
 1. `hooks.sh install` writes three small hook scripts to `~/.tmux-cc/hooks/` and registers them in `~/.claude/settings.json`.
