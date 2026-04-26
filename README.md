@@ -14,6 +14,7 @@ A tmux plugin for managing multiple [Claude Code](https://docs.anthropic.com/en/
 - **Last message preview** -- optionally show a snippet of Claude's most recent response
 - **Sortable** -- toggle between recent-activity and alphabetical sort with `ctrl-s`
 - **Configurable columns** -- toggle display of session ID, directory, tmux location, and message preview with keyboard shortcuts
+- **Environment-aware** -- non-tmux sessions (VS Code, plain iTerm2 / Terminal) show their environment label (`vscode`, `iTerm.app`, etc.) instead of a generic "(no pane)"
 
 ## Prerequisites
 
