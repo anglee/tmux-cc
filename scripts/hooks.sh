@@ -166,6 +166,9 @@ case "$HOOK_EVENT" in
       *) STATUS="waiting"; DETAIL="\"$NOTIF_TYPE\"" ;;
     esac
     ;;
+  PermissionRequest)
+    STATUS="waiting"; DETAIL="\"permission_request\""
+    ;;
   *)
     exit 0
     ;;
@@ -202,7 +205,8 @@ install_settings() {
     add_if_missing("Stop"; $status; "") |
     add_if_missing("UserPromptSubmit"; $status; "") |
     add_if_missing("PostToolUse"; $status; "") |
-    add_if_missing("Notification"; $status; "")
+    add_if_missing("Notification"; $status; "") |
+    add_if_missing("PermissionRequest"; $status; "")
   ' "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
 }
 
@@ -230,6 +234,7 @@ uninstall_settings() {
       clean("UserPromptSubmit"; $status) |
       clean("PostToolUse"; $status) |
       clean("Notification"; $status) |
+      clean("PermissionRequest"; $status) |
       if (.hooks | length) == 0 then del(.hooks) else . end
     else . end
   ' "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
@@ -249,7 +254,8 @@ check_status() {
     has_cmd("Stop"; $status) and
     has_cmd("UserPromptSubmit"; $status) and
     has_cmd("PostToolUse"; $status) and
-    has_cmd("Notification"; $status)
+    has_cmd("Notification"; $status) and
+    has_cmd("PermissionRequest"; $status)
   ' "$SETTINGS_FILE" >/dev/null 2>&1
 }
 

@@ -35,7 +35,7 @@ The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh instal
 
 1. **hooks.sh install** does two things:
    - Writes the three hook shell scripts to `~/.tmux-cc/hooks/`
-   - Adds entries to `~/.claude/settings.json` under `.hooks` for events: `SessionStart`, `SessionEnd`, `Stop`, `UserPromptSubmit`, `PostToolUse`, `Notification`
+   - Adds entries to `~/.claude/settings.json` under `.hooks` for events: `SessionStart`, `SessionEnd`, `Stop`, `UserPromptSubmit`, `PostToolUse`, `Notification`, `PermissionRequest`
 
 2. **Claude Code** calls these hooks during its lifecycle. Each hook receives JSON on stdin with fields like `session_id`, `cwd`, `model`, `hook_event_name`, etc.
 
@@ -45,6 +45,7 @@ The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh instal
    - `Stop` -> idle
    - `UserPromptSubmit`, `PostToolUse` -> working
    - `Notification` -> idle (if idle_prompt) or waiting (otherwise)
+   - `PermissionRequest` -> waiting (covers VS Code, where `Notification(permission_prompt)` does not fire; also covers `AskUserQuestion`, which CC routes through the permission flow)
 
    It updates the JSON file in-place using jq.
 
