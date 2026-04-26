@@ -73,12 +73,15 @@ Press `prefix + C` to open the session switcher in a tmux popup.
 |---|---|
 | `Enter` | Jump to the selected session's tmux pane |
 | `Esc` | Close the switcher |
-| `ctrl-s` | Toggle sort order: recent (most recently active first) / alpha (by directory name) |
-| `ctrl-i` | Cycle session ID display: short / complete / hidden |
-| `ctrl-d` | Cycle directory display: full path / basename / hidden |
-| `ctrl-t` | Cycle tmux location display: session+window / session / window / win.pane / session+win.pane / hidden |
-| `ctrl-l` | Toggle last assistant message preview |
-| `ctrl-p` | Toggle the pane snapshot preview panel |
+
+| Key | Field | Modes |
+|---|---|---|
+| `ctrl-i` | Session ID | short (8 char) → complete (full UUID) → hidden |
+| `ctrl-d` | Directory | full path → basename → hidden |
+| `ctrl-t` | Tmux pane | session+window → session → window → win.pane → session+win.pane → hidden |
+| `ctrl-l` | Last message | show → hidden |
+| `ctrl-s` | Sort order | recent (most recently active first) → alpha (by directory name) |
+| `ctrl-p` | Preview pane | show → hidden |
 
 ### Session statuses
 
