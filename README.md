@@ -2,6 +2,9 @@
 
 A tmux plugin for managing multiple [Claude Code](https://docs.anthropic.com/en/docs/claude-code) sessions. Quickly see which sessions are active, what they're doing, and jump between them.
 
+<img width="1351" height="859" alt="image" src="https://github.com/user-attachments/assets/346b3e13-3936-4c5c-bc2d-1186f70c012c" />
+
+
 ## Features
 
 - **Session switcher** -- fuzzy-find across all active Claude Code sessions with `prefix + C`
