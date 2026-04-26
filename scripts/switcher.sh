@@ -133,7 +133,18 @@ render_lines() {
           *)                 line+="  ${GREEN}${tmux_session}${RESET}:${LIGHT_BLUE}${tmux_winname}${RESET}" ;;
         esac
       else
-        line+="  ${DARK_GREEN}(no pane)${RESET}"
+        local label="(no pane)"
+        if [[ -f "$ACTIVE_DIR/${sid}.json" ]]; then
+          local derived
+          derived=$(jq -r '
+            if (.entrypoint // "") == "claude-vscode" then "vscode"
+            elif (.termProgram // "") != "" then .termProgram
+            else ""
+            end
+          ' "$ACTIVE_DIR/${sid}.json" 2>/dev/null)
+          [[ -n "$derived" ]] && label="$derived"
+        fi
+        line+="  ${DARK_GREEN}${label}${RESET}"
       fi
     fi
 
