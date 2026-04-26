@@ -39,7 +39,7 @@ The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh instal
 
 2. **Claude Code** calls these hooks during its lifecycle. Each hook receives JSON on stdin with fields like `session_id`, `cwd`, `model`, `hook_event_name`, etc.
 
-3. **session-start.sh** walks up the process tree via `ps -o ppid=` to find the Claude Code PID. It writes a JSON file to `~/.tmux-cc/active/{session_id}.json` containing pid, cwd, model, tmux pane ID, status, and timestamps. It skips forked sessions (detected via `--fork-session` in the parent cmdline).
+3. **session-start.sh** walks up the process tree via `ps -o ppid=` to find the Claude Code PID. It writes a JSON file to `~/.tmux-cc/active/{session_id}.json` containing pid, cwd, model, tmux pane ID, `entrypoint` (`$CLAUDE_CODE_ENTRYPOINT`, e.g. `cli` / `claude-vscode`), `termProgram` (`$TERM_PROGRAM`, e.g. `tmux` / `iTerm.app`), status, and timestamps. It skips forked sessions (detected by walking the near process chain `$PPID → INNER_PID → OUTER_PID` for `--fork-session` in argv) and subagents (detected via `OUTER_PID <= 1`, since they are reparented to init). The fork's *real* `session_id` is registered later via the fork-fallback path in `session-status.sh` (see step 4).
 
 4. **session-status.sh** maps hook events to statuses:
    - `Stop` -> idle
@@ -47,7 +47,7 @@ The hook scripts under `~/.tmux-cc/hooks/` are **generated** by `hooks.sh instal
    - `Notification` -> idle (if idle_prompt) or waiting (otherwise)
    - `PermissionRequest` -> waiting (covers VS Code, where `Notification(permission_prompt)` does not fire; also covers `AskUserQuestion`, which CC routes through the permission flow)
 
-   It updates the JSON file in-place using jq.
+   It updates the JSON file in-place using jq. **Fork-fallback registration**: if a hook fires for a `session_id` with no existing registry file, `session-status.sh` writes one on the fly (using the same process-tree walk and env capture as `session-start.sh`). This is how forked sessions enter the registry — CC sends the fork's real `session_id` only on `UserPromptSubmit`/later events, not on the fork's `SessionStart` (which carries the *parent's* id and is filtered out at start time).
 
 5. **switcher.sh** is the UI. It:
    - Reads all `~/.tmux-cc/active/*.json` files
